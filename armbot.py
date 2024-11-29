@@ -10,11 +10,11 @@ class armbot():
     def __init__(
         self,
         #  ----------------- geometry of the plotter -----------------
-        # the maximum rectangular drawing area in milimeters
-        xmin: float = 20,
-        ymin: float = 20,
-        xmax: float = 120,
-        ymax: float = 120,
+        # the maximum rectangular drawing area in milimeters :
+        xmin: float = -10,
+        ymin: float = 10,
+        xmax: float = 110,
+        ymax: float = 110,
         inner_arm_length: float = 80,  # the lengths of the arms in milimeters
         outer_arm_length: float = 80,
         feedrate: int = 1200, # default feedrate of the machine in milimeter per minute = 10 mm per second
@@ -72,9 +72,10 @@ class armbot():
         hypotenuse = math.sqrt(x**2 + y**2)
 
         if hypotenuse > self.inner_arm_length + self.outer_arm_length:
-            raise Exception(
-                f"Cannot reach {hypotenuse}; total arm length is {self.inner_arm_length + self.outer_arm_length}"
-            )
+            print(f"Cannot reach {hypotenuse}; total arm length is {self.inner_arm_length + self.outer_arm_length}")
+            #raise Exception(
+            #    f"Cannot reach {hypotenuse}; total arm length is {self.inner_arm_length + self.outer_arm_length}"
+            #)
 
         hypotenuse_angle = math.asin(x / hypotenuse)
 
@@ -158,11 +159,11 @@ class armbot():
 
 
     def box(self):
-        self.move(40,40)
-        self.move(40,100)
-        self.move(100,100)
-        self.move(100,40)
-        self.move(40,40)
+        self.move(self.xmin,self.ymin)
+        self.move(self.xmin,self.ymax)
+        self.move(self.xmax,self.ymax)
+        self.move(self.xmax,self.ymin)
+        self.move(self.xmin,self.ymin)
 
     
 

@@ -14,7 +14,7 @@ class gcode():
             gcode = f.read()
             for line in GcodeParser(gcode).lines:
                 print(line)
-                if line.command == ('G', 1):
+                if line.command == ('G', 1) or line.command == ('G', 0):
                     self.armbot.move(line.params["X"],line.params["Y"])
         self.armbot.shutdown()
 
@@ -23,5 +23,5 @@ class gcode():
 
 if __name__=="__main__":
     gcode = gcode()
-    gcode.draw('hello100.gcode')
+    gcode.draw('star.gcode')
 
