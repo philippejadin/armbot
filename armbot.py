@@ -1,3 +1,7 @@
+# Inspired heavily by brachiograph https://www.brachiograph.art/
+# Main class to drive the arm
+
+
 from telemetrix import telemetrix
 import math
 from time import sleep
@@ -7,8 +11,8 @@ class armbot():
         self,
         #  ----------------- geometry of the plotter -----------------
         # the maximum rectangular drawing area in milimeters
-        xmin: float = 40,
-        ymin: float = 40,
+        xmin: float = 10,
+        ymin: float = 10,
         xmax: float = 120,
         ymax: float = 120,
         inner_arm_length: float = 80,  # the lengths of the arms in milimeters
@@ -105,14 +109,15 @@ class armbot():
 
         print(f"{self.x=}")
         print(f"{self.y=}")
+        print(f"{distance=} mm")
 
-        if (distance > 0):        
+        if (distance > 0.001):        
             no_of_steps = round(distance / self.resolution) or 1
             (x_distance, y_distance) = (x - self.x, y - self.y)
             (x_distance_per_step, y_distance_per_step) = (x_distance / no_of_steps, y_distance / no_of_steps)
             step_time = distance / self.feedrate * 60 / no_of_steps 
             print(f"{step_time=} seconds")
-            print(f"{distance=} mm")
+            
 
             for step in range(no_of_steps):
                 # update current position
