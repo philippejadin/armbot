@@ -46,9 +46,10 @@ class armbot():
 
         self.startup()
 
-        self.x = 0
-        self.y = 0
-        self.park()
+        # we assume the bot is parked already :
+        self.x = self.xmin
+        self.y = self.ymin
+        
         
     def startup(self):    
         self.board = telemetrix.Telemetrix()
@@ -64,7 +65,7 @@ class armbot():
         sleep(0.2)
         self.board.shutdown()
       
-
+    # this is copied straight from brachiograph : 
     def xy_to_angles(self, x=0, y=0):
         """Return the servo angles required to reach any x/y position."""
 
@@ -166,7 +167,7 @@ class armbot():
     
 
     def park(self):
-        self.move(self.xmin, self.ymin)
+        self.move(0, 0)
         
 
 
