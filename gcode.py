@@ -1,4 +1,4 @@
-# open a gcode file and use armbot to drawit
+# open a gcode file and use armbot to draw it
 
 
 from gcodeparser import GcodeParser
@@ -9,8 +9,7 @@ class gcode():
     def __init__(self):
         self.armbot = armbot()
 
-    def open(self, filename):
-        # open gcode file and store contents as variable
+    def draw(self, filename):
         with open(filename, 'r') as f:
             gcode = f.read()
             for line in GcodeParser(gcode).lines:
@@ -24,5 +23,5 @@ class gcode():
 
 if __name__=="__main__":
     gcode = gcode()
-    gcode.open('hello100.gcode')
+    gcode.draw('hello100.gcode')
 
