@@ -5,50 +5,59 @@ from time import sleep
 class armbot():
     def __init__(
         self,
-       
         #  ----------------- geometry of the plotter -----------------
-        bounds: tuple = [-8, 4, 6, 13],  # the maximum rectangular drawing area
-        inner_arm: float = 8,  # the lengths of the arms
-        outer_arm: float = 8,
-        #  ----------------- naive calculation values -----------------
-        servo_1_parked_pw: int = 1500,  # pulse-widths when parked
-        servo_2_parked_pw: int = 1500,
-        servo_1_degree_ms: int = -10,  # milliseconds pulse-width per degree
-        servo_2_degree_ms: int = 10,  # reversed for the mounting of the shoulder servo
-        servo_1_parked_angle: int = -90,  # the arm angle in the parked position
-        servo_2_parked_angle: int = 90,
-        #  ----------------- hysteresis -----------------
-        hysteresis_correction_1: int = 0,  # hardware error compensation
-        hysteresis_correction_2: int = 0,
-        #  ----------------- the pen -----------------
-        pw_up: int = 1500,  # pulse-widths for pen up/down
-        pw_down: int = 1100,
-        #  ----------------- physical control -----------------
-        wait: float = None,  # default wait time between operations
-        angular_step: float = None,  # default step of the servos in degrees
-        resolution: float = None,  # default resolution of the plotter in cm
+        # the maximum rectangular drawing area in milimeters
+        xmin: float = 10,
+        ymin: float = 10,
+        xmax: float = 100,
+        ymax: float = 100,
+        inner_arm_length: float = 80,  # the lengths of the arms in milimeters
+        outer_arm_length: float = 80,
+        feedrate: int = 1200, # default feedrate of the machine in milimeter per minute = 10 mm per second
+        resolution: float = 1, # distance in mm between each move
+        #  ----------------- servo pins -----------------
+        inner_servo_pin: int = 9,
+        outer_servo_pin: int = 10,
+        pen_servo_pin: int = 11,
+
+       
     ):
 
         # set the geometry
-        self.inner_arm = inner_arm
-        self.outer_arm = outer_arm
+        self.xmin = xmin
+        self.xmax = xmax
+        self.ymin = ymin
+        self.ymax = ymax
+        self.inner_arm_length = inner_arm_length
+        self.outer_arm_length = outer_arm_length
+        self.feedrate = feedrate
+        self.resolution = resolution
 
-        self.inner_pin = 9
-        self.outer_pin = 10
-        self.pen_pin = 11
+        # set the servo pins
+        self.inner_servo_pin = inner_servo_pin
+        self.outer_servo_pin = outer_servo_pin
+        self.pen_servo_pin = pen_servo_pin
 
         self.wait = 0.5
-        
-        # Set the x and y position state, so it knows its current x/y position.
-        self.x = -self.inner_arm
-        self.y = self.outer_arm
 
+        self.startup()
+
+        self.x = self.xmin
+        self.y = self.ymin
+        self.move(self.xmin, self.ymin)
         
+    def startup(self):    
         self.board = telemetrix.Telemetrix()
-        self.board.set_pin_mode_servo(self.inner_pin)
-        self.board.set_pin_mode_servo(self.outer_pin)
-        self.board.set_pin_mode_servo(self.pen_pin)
+        self.board.set_pin_mode_servo(self.inner_servo_pin)
+        self.board.set_pin_mode_servo(self.outer_servo_pin)
+        self.board.set_pin_mode_servo(self.pen_servo_pin)
 
+    def shutdown(self):
+        self.board.servo_detach(self.inner_servo_pin)
+        self.board.servo_detach(self.outer_servo_pin)
+        self.board.servo_detach(self.pen_servo_pin)
+        sleep(0.2)
+        self.board.shutdown()
       
 
     def xy_to_angles(self, x=0, y=0):
@@ -56,20 +65,20 @@ class armbot():
 
         hypotenuse = math.sqrt(x**2 + y**2)
 
-        if hypotenuse > self.inner_arm + self.outer_arm:
+        if hypotenuse > self.inner_arm_length + self.outer_arm_length:
             raise Exception(
-                f"Cannot reach {hypotenuse}; total arm length is {self.inner_arm + self.outer_arm}"
+                f"Cannot reach {hypotenuse}; total arm length is {self.inner_arm_length + self.outer_arm_length}"
             )
 
         hypotenuse_angle = math.asin(x / hypotenuse)
 
         inner_angle = math.acos(
-            (hypotenuse**2 + self.inner_arm**2 - self.outer_arm**2)
-            / (2 * hypotenuse * self.inner_arm)
+            (hypotenuse**2 + self.inner_arm_length**2 - self.outer_arm_length**2)
+            / (2 * hypotenuse * self.inner_arm_length)
         )
         outer_angle = math.acos(
-            (self.inner_arm**2 + self.outer_arm**2 - hypotenuse**2)
-            / (2 * self.inner_arm * self.outer_arm)
+            (self.inner_arm_length**2 + self.outer_arm_length**2 - hypotenuse**2)
+            / (2 * self.inner_arm_length * self.outer_arm_length)
         )
 
         shoulder_motor_angle = hypotenuse_angle - inner_angle
@@ -79,42 +88,72 @@ class armbot():
     
     
     def set_angles(self, a,b):
-        self.board.servo_write(self.inner_pin, 90 - int(a))
-        self.board.servo_write(self.outer_pin, int(b))
-        sleep(self.wait)
+        self.board.servo_write(self.inner_servo_pin, 90 - int(a))
+        self.board.servo_write(self.outer_servo_pin, int(b))
+        
 
     
     def move(self, x, y):
-        angles = self.xy_to_angles(x,y)
-        print(f"{x=}")
-        print(f"{y=}")
-        print(f"{angles=}")
-        self.set_angles(int(angles[0]),int(angles[1]))
-        sleep(self.wait)
+        # enforce limits
+        if (x < self.xmin): x = self.xmin
+        if (x > self.xmax): x = self.xmax
+        if (y < self.ymin): y = self.ymin
+        if (y > self.ymax): y = self.ymax
+
+        # calculate distance in order to set steps and speed
+        distance = ((x - self.x) ** 2 + (y - self.y) ** 2) ** 0.5
+
+        if (distance > 0):        
+            no_of_steps = round(distance / self.resolution) or 1
+            (x_distance, y_distance) = (x - self.x, y - self.y)
+            (x_distance_per_step, y_distance_per_step) = (x_distance / no_of_steps, y_distance / no_of_steps)
+            step_time = distance / self.feedrate * 60 / no_of_steps 
+            print(f"{step_time=} seconds")
+            print(f"{distance=} mm")
+            sleep(1)
+
+            for step in range(no_of_steps):
+                # update current position
+                self.x = self.x + x_distance_per_step
+                self.y = self.y + y_distance_per_step
+                # calculates angles
+                angle_1, angle_2 = self.xy_to_angles(self.x, self.y)
+                self.set_angles(angle_1, angle_2)
+
+                sleep(step_time)
+
+                print(f"{self.x=}")
+                print(f"{self.y=}")
+                #print(f"{angles=}")
+
+
+    def pen_up(self):
+        self.board.servo_write(self.pen_servo_pin, 0)
+        
+    def pen_down(self):
+        self.board.servo_write(self.pen_servo_pin, 180)
+        
+    
 
 
     def box(self):
-        self.move(1,1)
-        self.move(1,4)
-        self.move(4,4)
-        self.move(4,1)
-        self.move(1,1)
+        self.move(40,40)
+        self.move(40,100)
+        self.move(100,100)
+        self.move(100,40)
+        self.move(40,40)
 
-    def shutdown(self):
-        self.board.servo_detach(self.inner_pin)
-        self.board.servo_detach(self.outer_pin)
-        self.board.servo_detach(self.pen_pin)
-        sleep(0.2)
-        self.board.shutdown()
+    
 
     def park(self):
-        self.move_angles(-90,90)
+        self.move(self.xmin, self.ymin)
         
 
 
 if __name__=="__main__":
     arm = armbot()
     arm.box()
+    arm.park()
     arm.shutdown()
 
    
