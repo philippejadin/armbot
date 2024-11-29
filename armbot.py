@@ -75,12 +75,12 @@ class armbot():
         shoulder_motor_angle = hypotenuse_angle - inner_angle
         elbow_motor_angle = math.pi - outer_angle
 
-        return (90 - math.degrees(shoulder_motor_angle), math.degrees(elbow_motor_angle))
+        return (math.degrees(shoulder_motor_angle), math.degrees(elbow_motor_angle))
     
     
     def set_angles(self, a,b):
-        self.board.servo_write(self.inner_pin,int(a))
-        self.board.servo_write(self.outer_pin,int(b))
+        self.board.servo_write(self.inner_pin, 90 - int(a))
+        self.board.servo_write(self.outer_pin, int(b))
         sleep(self.wait)
 
     
@@ -89,8 +89,7 @@ class armbot():
         print(f"{x=}")
         print(f"{y=}")
         print(f"{angles=}")
-        self.board.servo_write(self.inner_pin,int(angles[0]))
-        self.board.servo_write(self.outer_pin,int(angles[1]))
+        self.set_angles(int(angles[0]),int(angles[1]))
         sleep(self.wait)
 
 
@@ -107,6 +106,9 @@ class armbot():
         self.board.servo_detach(self.pen_pin)
         sleep(0.2)
         self.board.shutdown()
+
+    def park(self):
+        self.move_angles(-90,90)
         
 
 
