@@ -7,10 +7,10 @@ class armbot():
         self,
         #  ----------------- geometry of the plotter -----------------
         # the maximum rectangular drawing area in milimeters
-        xmin: float = 10,
-        ymin: float = 10,
-        xmax: float = 100,
-        ymax: float = 100,
+        xmin: float = 40,
+        ymin: float = 40,
+        xmax: float = 120,
+        ymax: float = 120,
         inner_arm_length: float = 80,  # the lengths of the arms in milimeters
         outer_arm_length: float = 80,
         feedrate: int = 1200, # default feedrate of the machine in milimeter per minute = 10 mm per second
@@ -103,6 +103,9 @@ class armbot():
         # calculate distance in order to set steps and speed
         distance = ((x - self.x) ** 2 + (y - self.y) ** 2) ** 0.5
 
+        print(f"{self.x=}")
+        print(f"{self.y=}")
+
         if (distance > 0):        
             no_of_steps = round(distance / self.resolution) or 1
             (x_distance, y_distance) = (x - self.x, y - self.y)
@@ -110,7 +113,6 @@ class armbot():
             step_time = distance / self.feedrate * 60 / no_of_steps 
             print(f"{step_time=} seconds")
             print(f"{distance=} mm")
-            sleep(1)
 
             for step in range(no_of_steps):
                 # update current position
@@ -122,9 +124,9 @@ class armbot():
 
                 sleep(step_time)
 
-                print(f"{self.x=}")
-                print(f"{self.y=}")
-                #print(f"{angles=}")
+                #print(f"{self.x=}")
+                #print(f"{self.y=}")
+        
 
 
     def pen_up(self):
