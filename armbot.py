@@ -11,8 +11,8 @@ class armbot():
         self,
         #  ----------------- geometry of the plotter -----------------
         # the maximum rectangular drawing area in milimeters
-        xmin: float = 10,
-        ymin: float = 10,
+        xmin: float = 20,
+        ymin: float = 20,
         xmax: float = 120,
         ymax: float = 120,
         inner_arm_length: float = 80,  # the lengths of the arms in milimeters
@@ -46,9 +46,9 @@ class armbot():
 
         self.startup()
 
-        self.x = self.xmin
-        self.y = self.ymin
-        self.move(self.xmin, self.ymin)
+        self.x = 0
+        self.y = 0
+        self.park()
         
     def startup(self):    
         self.board = telemetrix.Telemetrix()
@@ -57,6 +57,7 @@ class armbot():
         self.board.set_pin_mode_servo(self.pen_servo_pin)
 
     def shutdown(self):
+        self.park()
         self.board.servo_detach(self.inner_servo_pin)
         self.board.servo_detach(self.outer_servo_pin)
         self.board.servo_detach(self.pen_servo_pin)
@@ -98,11 +99,23 @@ class armbot():
 
     
     def move(self, x, y):
+        # handle the fact that xmin and ymin is in fact our 0
+        x = x + self.xmin
+        y = y + self.ymin
+
         # enforce limits
-        if (x < self.xmin): x = self.xmin
-        if (x > self.xmax): x = self.xmax
-        if (y < self.ymin): y = self.ymin
-        if (y > self.ymax): y = self.ymax
+        if (x < self.xmin): 
+            x = self.xmin
+            print('xmin reached')
+        if (x > self.xmax): 
+            x = self.xmax
+            print('xmax reached')
+        if (y < self.ymin): 
+            y = self.ymin
+            print('ymin reached')
+        if (y > self.ymax): 
+            y = self.ymax
+            print('ymax reached')
 
         # calculate distance in order to set steps and speed
         distance = ((x - self.x) ** 2 + (y - self.y) ** 2) ** 0.5
